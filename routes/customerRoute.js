@@ -1,6 +1,7 @@
 import express from "express";
 import Customer from "../models/Customer.js";
 import Collector from "../models/Collector.js";
+import auth from "../middleware/authMiddleware.js";
 
 
 const router = express.Router();
@@ -345,6 +346,44 @@ router.get("/promise/overdue", async (req, res) => {
     });
   }
 });
+
+// SUBMIT PAYMENT
+router.post("/payment/:customerId", auth, async (req, res) => {
+  try {
+    const { customerId } = req.params;
+    const { paidAmount } = req.body;
+
+    const customer = await Customer.findById(customerId);
+    if (!customer) {
+      return res.status(404).json({ success: false, message: "Customer not found" });
+    }
+
+    customer.amountPaid += paidAmount;
+    customer.remainingAmount = customer.loanAmount - customer.amountPaid;
+
+    // Add payment to history
+    customer.paymentHistory.push({
+      paidAmount,
+      date: new Date(),
+    });
+
+    await customer.save();
+
+    res.json({
+      success: true,
+      message: "Payment submitted successfully 💰",
+      data: customer
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Error submitting payment",
+      error: error.message
+    });
+  }
+});
+
 
 
 export default router;
