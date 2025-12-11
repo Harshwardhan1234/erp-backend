@@ -1,6 +1,8 @@
 import express from "express";
 import Admin from "../models/Admin.js";
 import jwt from "jsonwebtoken";
+import Customer from "../models/Customer.js";
+import Collector from "../models/Collector.js";
 
 const router = express.Router();
 
@@ -22,6 +24,41 @@ router.post("/create", async (req, res) => {
     });
   }
 });
+// ADMIN REPORTS (Dashboard + Reports Page)
+router.get("/report", async (req, res) => {
+  try {
+    const customers = await Customer.find();
+    const collectors = await Collector.find();
+
+    const totalCustomers = customers.length;
+
+    const totalRecovered = customers.reduce((sum, c) => sum + c.totalRecovered, 0);
+    const totalLoan = customers.reduce((sum, c) => sum + c.loanAmount, 0);
+    const totalPending = totalLoan - totalRecovered;
+
+    const paidCustomers = customers.filter(c => c.remainingAmount === 0).length;
+    const pendingCustomers = customers.filter(c => c.remainingAmount > 0).length;
+
+    // Today's collection (today's date)
+    const today = new Date().toLocaleDateString("en-IN");
+    const todayCollection = customers
+      .filter(c => c.lastPaidDate === today)
+      .reduce((sum, c) => sum + (c.lastPaidAmount || 0), 0);
+
+    res.json({
+      totalCustomers,
+      totalRecovered,
+      totalPending,
+      paidCustomers,
+      pendingCustomers,
+      todayCollection
+    });
+
+  } catch (err) {
+    res.status(500).json({ message: "Error generating report", error: err.message });
+  }
+});
+
 
 // ADMIN LOGIN
 router.post("/login", async (req, res) => {
