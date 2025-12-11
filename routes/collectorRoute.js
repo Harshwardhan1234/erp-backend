@@ -6,6 +6,27 @@ import Customer from "../models/Customer.js";
 
 const router = express.Router();
 
+// GET ALL COLLECTORS
+router.get("/all", async (req, res) => {
+  try {
+    const collectors = await Collector.find();
+
+    res.json({
+      success: true,
+      data: collectors
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Failed to load collectors",
+      error: error.message
+    });
+  }
+});
+
+
+
 // =============================
 // CREATE COLLECTOR
 // =============================
