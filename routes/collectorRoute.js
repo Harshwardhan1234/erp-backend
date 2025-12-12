@@ -6,6 +6,27 @@ import Customer from "../models/Customer.js";
 
 const router = express.Router();
 
+
+// CREATE COLLECTOR (Admin use)
+router.post("/create", async (req, res) => {
+  try {
+    const collector = new Collector(req.body);
+    await collector.save();
+
+    res.json({
+      success: true,
+      message: "Collector created successfully",
+      collector,
+    });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: "Collector creation failed",
+      error: err.message,
+    });
+  }
+});
+
 // GET ALL COLLECTORS
 router.get("/all", async (req, res) => {
   try {
