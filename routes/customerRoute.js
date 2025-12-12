@@ -347,6 +347,45 @@ router.get("/promise/overdue", async (req, res) => {
   }
 });
 
+router.put("/assign/:id", async (req, res) => {
+  try {
+    const { collectorId } = req.body;
+
+    await Customer.findByIdAndUpdate(req.params.id, {
+      assignedTo: collectorId
+    });
+
+    res.json({ success: true, message: "Customer assigned successfully" });
+  } catch (err) {
+    res.status(500).json({ message: "Failed to assign customer" });
+  }
+});
+
+
+
+router.get("/all", async (req, res) => {
+  try {
+    const { search } = req.query;
+
+    let query = {};
+
+    if (search) {
+      query.$or = [
+        { name: { $regex: search, $options: "i" } },
+        { phone: { $regex: search, $options: "i" } },
+        { area: { $regex: search, $options: "i" } }
+      ];
+    }
+
+    const customers = await Customer.find(query).sort({ createdAt: -1 });
+
+    res.json({ success: true, customers });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+
 // SUBMIT PAYMENT
 router.post("/payment/:customerId", auth, async (req, res) => {
   try {
