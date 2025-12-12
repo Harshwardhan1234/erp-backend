@@ -58,38 +58,36 @@ router.post("/login", async (req, res) => {
 
     const collector = await Collector.findOne({ phone });
     if (!collector) {
-      return res.status(404).json({ success: false, message: "Collector not found" });
+      return res.status(404).json({ message: "Collector not found" });
     }
 
     const isMatch = await collector.comparePassword(password);
     if (!isMatch) {
-      return res.status(400).json({ success: false, message: "Invalid password" });
+      return res.status(400).json({ message: "Invalid password" });
     }
 
-    const token = jwt.sign({ id: collector._id }, "secret123", {
-      expiresIn: "7d"
-    });
+    const token = jwt.sign(
+      { id: collector._id, role: "collector" },
+      "secret123",
+      { expiresIn: "7d" }
+    );
 
     res.json({
       success: true,
-      message: "Login successful",
       token,
       collector: {
         id: collector._id,
         name: collector.name,
         phone: collector.phone,
-        area: collector.area
-      }
+        area: collector.area,
+      },
     });
-
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: "Login failed",
-      error: error.message
-    });
+  } catch (err) {
+    res.status(500).json({ message: "Login failed", error: err.message });
   }
 });
+
+
 
 
 // =============================
