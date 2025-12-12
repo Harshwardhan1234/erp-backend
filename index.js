@@ -6,6 +6,9 @@ import collectorRoute from "./routes/collectorRoute.js";
 import adminRoute from "./routes/adminRoute.js";
 import cors from "cors";
 import excelRoute from "./routes/excelRoute.js";
+import dotenv from "dotenv";
+dotenv.config();
+
 const app = express();
 
 // CORS FIX
@@ -20,6 +23,7 @@ app.use(express.json());
 
 // Connect MongoDB
 connectDB();
+connectDB(process.env.MONGO_URI);
 
 // Routes
 app.use("/test", testRoute);
