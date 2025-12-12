@@ -5,7 +5,7 @@ import customerRoute from "./routes/customerRoute.js";
 import collectorRoute from "./routes/collectorRoute.js";
 import adminRoute from "./routes/adminRoute.js";
 import cors from "cors";
-
+import excelRoute from "./routes/excelRoute.js";
 const app = express();
 
 // CORS FIX
@@ -26,6 +26,7 @@ app.use("/test", testRoute);
 app.use("/customer", customerRoute);
 app.use("/collector", collectorRoute);
 app.use("/admin", adminRoute);
+app.use("/excel", excelRoute);
 
 // Test route
 app.get("/", (req, res) => {
