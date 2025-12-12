@@ -60,22 +60,18 @@ router.get("/report", async (req, res) => {
 });
 
 
+
 import multer from "multer";
 import XLSX from "xlsx";
 
-// Multer setup for file upload
 const upload = multer({ storage: multer.memoryStorage() });
 
-// -------------------------------------------
-//  📌 UPLOAD & IMPORT EXCEL CUSTOMER DATA
-// -------------------------------------------
 router.post("/upload-excel", upload.single("file"), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ success: false, message: "No file uploaded" });
     }
 
-    // Read Excel Buffer
     const workbook = XLSX.read(req.file.buffer, { type: "buffer" });
     const sheet = workbook.Sheets[workbook.SheetNames[0]];
     const data = XLSX.utils.sheet_to_json(sheet);
@@ -83,18 +79,15 @@ router.post("/upload-excel", upload.single("file"), async (req, res) => {
     let importedCount = 0;
 
     for (const row of data) {
-      // Excel columns expected:
-      // name | phone | area | loanAmount | amountPaid | remainingAmount | dueDate | status
-
       await Customer.create({
         name: row.name,
         phone: row.phone,
         area: row.area,
-        loanAmount: row.loanAmount,
-        totalRecovered: row.amountPaid || 0,
-        remainingAmount: row.remainingAmount,
-        dueDate: row.dueDate,
-        status: row.status,
+        loanAmount: Number(row.loanAmount),
+        amountPaid: Number(row.amountPaid) || 0,
+        remainingAmount: Number(row.remainingAmount),
+        dueDate: new Date(row.dueDate),
+        status: row.status
       });
 
       importedCount++;
@@ -102,13 +95,14 @@ router.post("/upload-excel", upload.single("file"), async (req, res) => {
 
     res.json({
       success: true,
-      message: `${importedCount} customers imported successfully`,
+      message: `${importedCount} customers imported successfully`
     });
+
   } catch (err) {
     res.status(500).json({
       success: false,
       message: "Import failed",
-      error: err.message,
+      error: err.message
     });
   }
 });
