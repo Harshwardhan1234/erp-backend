@@ -73,27 +73,53 @@ router.post("/add", async (req, res) => {
 // =============================
 // COLLECTOR LOGIN
 // =============================
-router.post("/login", async (req, res) => {
+// =============================
+// 🔐 COLLECTOR LOGIN (SAFE v2)
+// =============================
+router.post("/login-v2", async (req, res) => {
   try {
-    const { phone, password } = req.body;
+    let { phone, password } = req.body;
 
-    const collector = await Collector.findOne({ phone });
-    if (!collector) {
-      return res.status(404).json({ success: false, message: "Collector not found" });
+    // 🧼 CLEAN INPUT
+    if (!phone || !password) {
+      return res.status(400).json({
+        success: false,
+        message: "Phone aur password required hai"
+      });
     }
 
+    phone = String(phone).trim();
+    password = String(password).trim();
+
+    // 🔍 FIND COLLECTOR
+    const collector = await Collector.findOne({ phone });
+
+    if (!collector) {
+      return res.status(404).json({
+        success: false,
+        message: "Collector not found"
+      });
+    }
+
+    // 🔑 PASSWORD CHECK
     const isMatch = await collector.comparePassword(password);
     if (!isMatch) {
-      return res.status(400).json({ success: false, message: "Invalid password" });
+      return res.status(400).json({
+        success: false,
+        message: "Invalid password"
+      });
     }
 
-    const token = jwt.sign({ id: collector._id }, "secret123", {
-      expiresIn: "7d"
-    });
+    // 🎟 TOKEN
+    const token = jwt.sign(
+      { id: collector._id, role: "collector" },
+      "secret123",
+      { expiresIn: "7d" }
+    );
 
-    res.json({
+    return res.json({
       success: true,
-      message: "Login successful",
+      message: "Collector login successful",
       token,
       collector: {
         id: collector._id,
@@ -104,13 +130,15 @@ router.post("/login", async (req, res) => {
     });
 
   } catch (error) {
+    console.error("Collector Login Error:", error.message);
     res.status(500).json({
       success: false,
-      message: "Login failed",
+      message: "Server error in collector login",
       error: error.message
     });
   }
 });
+
 
 
 // =============================
