@@ -310,40 +310,39 @@ router.get("/area/report", async (req, res) => {
     });
   }
 });
- // =============================
-// COLLECTOR LOGIN (FINAL SAFE)
-// =============================
-router.post("/login-safe", async (req, res) => {
+// ✅ COLLECTOR LOGIN
+router.post("/login", async (req, res) => {
   try {
     const { phone, password } = req.body;
 
-    console.log("LOGIN HIT:", phone);
-
+    // 1️⃣ collector exist?
     const collector = await Collector.findOne({ phone });
     if (!collector) {
-      return res.status(200).json({
+      return res.status(404).json({
         success: false,
         message: "Collector not found"
       });
     }
 
+    // 2️⃣ password match?
     const isMatch = await collector.comparePassword(password);
     if (!isMatch) {
-      return res.status(200).json({
+      return res.status(400).json({
         success: false,
-        message: "Wrong password"
+        message: "Invalid password"
       });
     }
 
+    // 3️⃣ token generate
     const token = jwt.sign(
-      { id: collector._id },
+      { id: collector._id, role: "collector" },
       "secret123",
       { expiresIn: "7d" }
     );
 
-    return res.json({
+    res.json({
       success: true,
-      message: "Login success",
+      message: "Login successful",
       token,
       collector: {
         id: collector._id,
@@ -354,13 +353,11 @@ router.post("/login-safe", async (req, res) => {
     });
 
   } catch (err) {
-    console.error("LOGIN ERROR:", err);
-    return res.status(500).json({
+    console.error("Collector login error:", err);
+    res.status(500).json({
       success: false,
-      message: "Server error"
+      message: "Collector login failed"
     });
   }
 });
-
-
 export default router;
