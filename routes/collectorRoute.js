@@ -53,18 +53,42 @@ router.get("/all", async (req, res) => {
 // =============================
 router.post("/add", async (req, res) => {
   try {
-    const collector = new Collector(req.body);
+    const { name, phone, password, area } = req.body;
+
+    if (!name || !phone || !password || !area) {
+      return res.status(400).json({
+        success: false,
+        message: "All fields required"
+      });
+    }
+
+    const exists = await Collector.findOne({ phone });
+    if (exists) {
+      return res.status(400).json({
+        success: false,
+        message: "Collector already exists"
+      });
+    }
+
+    const collector = new Collector({
+      name,
+      phone: phone.trim(),
+      password: password.trim(),
+      area
+    });
+
     await collector.save();
 
     res.json({
       success: true,
-      message: "Collector Created Successfully 🚀"
+      message: "Collector created successfully"
     });
-  } catch (error) {
+
+  } catch (err) {
     res.status(500).json({
       success: false,
-      message: "Error creating collector",
-      error: error.message
+      message: "Collector creation failed",
+      error: err.message
     });
   }
 });
@@ -73,9 +97,64 @@ router.post("/add", async (req, res) => {
 // =============================
 // COLLECTOR LOGIN
 // =============================
-// =============================
-// 🔐 COLLECTOR LOGIN (SAFE v2)
-// =============================
+router.post("/login", async (req, res) => {
+  try {
+    let { phone, password } = req.body;
+
+    if (!phone || !password) {
+      return res.status(400).json({
+        success: false,
+        message: "Phone & password required"
+      });
+    }
+
+    phone = phone.trim();
+    password = password.trim();
+
+    const collector = await Collector.findOne({ phone });
+    if (!collector) {
+      return res.status(404).json({
+        success: false,
+        message: "Collector not found"
+      });
+    }
+
+    const isMatch = await collector.comparePassword(password);
+    if (!isMatch) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid password"
+      });
+    }
+
+    const token = jwt.sign(
+      { id: collector._id, role: "collector" },
+      "secret123",
+      { expiresIn: "7d" }
+    );
+
+    res.json({
+      success: true,
+      message: "Login successful",
+      token,
+      collector: {
+        id: collector._id,
+        name: collector.name,
+        phone: collector.phone,
+        area: collector.area
+      }
+    });
+
+  } catch (err) {
+    console.error("Collector login error:", err);
+    res.status(500).json({
+      success: false,
+      message: "Collector login failed"
+    });
+  }
+});
+
+
 router.post("/login-v2", async (req, res) => {
   try {
     let { phone, password } = req.body;
@@ -310,54 +389,5 @@ router.get("/area/report", async (req, res) => {
     });
   }
 });
-// ✅ COLLECTOR LOGIN
-router.post("/login", async (req, res) => {
-  try {
-    const { phone, password } = req.body;
 
-    // 1️⃣ collector exist?
-    const collector = await Collector.findOne({ phone });
-    if (!collector) {
-      return res.status(404).json({
-        success: false,
-        message: "Collector not found"
-      });
-    }
-
-    // 2️⃣ password match?
-    const isMatch = await collector.comparePassword(password);
-    if (!isMatch) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid password"
-      });
-    }
-
-    // 3️⃣ token generate
-    const token = jwt.sign(
-      { id: collector._id, role: "collector" },
-      "secret123",
-      { expiresIn: "7d" }
-    );
-
-    res.json({
-      success: true,
-      message: "Login successful",
-      token,
-      collector: {
-        id: collector._id,
-        name: collector.name,
-        phone: collector.phone,
-        area: collector.area
-      }
-    });
-
-  } catch (err) {
-    console.error("Collector login error:", err);
-    res.status(500).json({
-      success: false,
-      message: "Collector login failed"
-    });
-  }
-});
 export default router;
