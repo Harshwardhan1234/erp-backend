@@ -310,6 +310,57 @@ router.get("/area/report", async (req, res) => {
     });
   }
 });
+ // =============================
+// COLLECTOR LOGIN (FINAL SAFE)
+// =============================
+router.post("/login-safe", async (req, res) => {
+  try {
+    const { phone, password } = req.body;
+
+    console.log("LOGIN HIT:", phone);
+
+    const collector = await Collector.findOne({ phone });
+    if (!collector) {
+      return res.status(200).json({
+        success: false,
+        message: "Collector not found"
+      });
+    }
+
+    const isMatch = await collector.comparePassword(password);
+    if (!isMatch) {
+      return res.status(200).json({
+        success: false,
+        message: "Wrong password"
+      });
+    }
+
+    const token = jwt.sign(
+      { id: collector._id },
+      "secret123",
+      { expiresIn: "7d" }
+    );
+
+    return res.json({
+      success: true,
+      message: "Login success",
+      token,
+      collector: {
+        id: collector._id,
+        name: collector.name,
+        phone: collector.phone,
+        area: collector.area
+      }
+    });
+
+  } catch (err) {
+    console.error("LOGIN ERROR:", err);
+    return res.status(500).json({
+      success: false,
+      message: "Server error"
+    });
+  }
+});
 
 
 export default router;
