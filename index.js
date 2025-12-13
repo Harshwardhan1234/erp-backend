@@ -11,24 +11,16 @@ import collectorRoute from "./routes/collectorRoute.js";
 import adminRoute from "./routes/adminRoute.js";
 import excelRoute from "./routes/excelRoute.js";
 
-// 🔹 ENV LOAD FIRST
+// 🔹 LOAD ENV FIRST (VERY IMPORTANT)
 dotenv.config();
 
 const app = express();
 
-// 🔹 CORS
-app.use(
-  cors({
-    origin: "*",
-    methods: ["GET", "POST", "PUT", "DELETE"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-  })
-);
-
-// 🔹 BODY PARSER
+// 🔹 CORS (simple & safe)
+app.use(cors());
 app.use(express.json());
 
-// 🔹 CONNECT DB (ONLY ONCE)
+// 🔹 CONNECT DB (ONLY ONCE, ATLAS ONLY)
 connectDB();
 
 // 🔹 ROUTES
@@ -40,7 +32,7 @@ app.use("/excel", excelRoute);
 
 // 🔹 ROOT CHECK
 app.get("/", (req, res) => {
-  res.send("ERP Server Running with MongoDB");
+  res.send("ERP Server Running with MongoDB Atlas");
 });
 
 // 🔹 START SERVER
