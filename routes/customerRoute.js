@@ -93,36 +93,47 @@ router.delete("/delete/:id", async (req, res) => {
    ASSIGN CUSTOMER TO COLLECTOR
    (SINGLE SOURCE OF TRUTH)
    =============================== */
-// ASSIGN CUSTOMER TO COLLECTOR (FINAL)
-// ASSIGN CUSTOMER TO COLLECTOR (FINAL)
+//// ===============================
+// ASSIGN CUSTOMER TO COLLECTOR
+// ===============================
 router.put("/assign/:customerId", async (req, res) => {
   try {
     const { customerId } = req.params;
     const { collectorId } = req.body;
 
     if (!collectorId) {
-      return res.status(400).json({ message: "collectorId required" });
+      return res.status(400).json({
+        success: false,
+        message: "collectorId is required",
+      });
     }
 
     const customer = await Customer.findById(customerId);
     if (!customer) {
-      return res.status(404).json({ message: "Customer not found" });
+      return res.status(404).json({
+        success: false,
+        message: "Customer not found",
+      });
     }
 
-    const collector = await Collector.findById(collectorId);
-    if (!collector) {
-      return res.status(404).json({ message: "Collector not found" });
-    }
-
-    customer.assignedTo = collectorId;
+    // 🔥 FINAL FIELD (LOCKED)
+    customer.assignedCollector = collectorId;
     await customer.save();
 
     res.json({
       success: true,
-      message: "Assigned successfully",
+      message: "Customer assigned successfully",
+      data: {
+        customerId: customer._id,
+        assignedCollector: customer.assignedCollector,
+      },
     });
   } catch (error) {
-    res.status(500).json({ message: "Assignment failed" });
+    res.status(500).json({
+      success: false,
+      message: "Assignment failed",
+      error: error.message,
+    });
   }
 });
 

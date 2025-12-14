@@ -1,48 +1,89 @@
 import mongoose from "mongoose";
 
-const customerSchema = new mongoose.Schema({
-  name: String,
-  phone: String,
-  address: String,
-  area: String,
-
-  loanType: { type: String, default: "Personal Loan" },
-
-  loanAmount: Number,
-  amountPaid: { type: Number, default: 0 },
-  remainingAmount: Number,
-
-  dueDate: Date,
-  dpd: { type: Number, default: 0 },
-
-  status: {
-    type: String,
-    enum: ["pending", "paid", "overdue"],
-    default: "pending"
+const paymentSchema = new mongoose.Schema({
+  paidAmount: {
+    type: Number,
+    required: true,
   },
-
-  assignedCollector: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "Collector",
-    default: null
+  date: {
+    type: Date,
+    default: Date.now,
   },
+});
 
-  paymentHistory: [
-    {
-      amount: Number,
-      mode: String,
-      reference: String,
-      date: { type: Date, default: Date.now }
-    }
-  ],
+const customerSchema = new mongoose.Schema(
+  {
+    name: {
+      type: String,
+      required: true,
+      trim: true,
+    },
 
-  visitStatus: {
-    type: String,
-    enum: ["not_visited", "visited", "not_found", "shifted"],
-    default: "not_visited"
+    phone: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+
+    address: {
+      type: String,
+      default: "",
+    },
+
+    loanAmount: {
+      type: Number,
+      required: true,
+      default: 0,
+    },
+
+    amountPaid: {
+      type: Number,
+      default: 0,
+    },
+
+    remainingAmount: {
+      type: Number,
+      default: 0,
+    },
+
+    dueDate: {
+      type: Date,
+    },
+
+    status: {
+      type: String,
+      enum: ["pending", "paid", "overdue"],
+      default: "pending",
+    },
+
+    visitStatus: {
+      type: String,
+      enum: [
+        "not_visited",
+        "visited",
+        "not_home",
+        "wrong_address",
+        "promised",
+      ],
+      default: "not_visited",
+    },
+
+    promiseDate: {
+      type: Date,
+    },
+
+    // 🔥 FINAL ASSIGNMENT FIELD (LOCKED)
+    assignedCollector: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Collector",
+      default: null,
+    },
+
+    paymentHistory: [paymentSchema],
   },
-
-  notes: String
-}, { timestamps: true });
+  {
+    timestamps: true,
+  }
+);
 
 export default mongoose.model("Customer", customerSchema);
