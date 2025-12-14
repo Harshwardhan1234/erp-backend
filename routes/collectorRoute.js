@@ -7,62 +7,22 @@ import Customer from "../models/Customer.js";
 const router = express.Router();
 
 
-// CREATE COLLECTOR (Admin use)
+
+/* ===============================
+   CREATE COLLECTOR  (ADMIN)
+   =============================== */
 router.post("/create", async (req, res) => {
-  try {
-    const collector = new Collector(req.body);
-    await collector.save();
-
-    res.json({
-      success: true,
-      message: "Collector created successfully",
-      collector,
-    });
-  } catch (err) {
-    res.status(500).json({
-      success: false,
-      message: "Collector creation failed",
-      error: err.message,
-    });
-  }
-});
-
-// GET ALL COLLECTORS
-router.get("/all", async (req, res) => {
-  try {
-    const collectors = await Collector.find();
-
-    res.json({
-      success: true,
-      data: collectors
-    });
-
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: "Failed to load collectors",
-      error: error.message
-    });
-  }
-});
-
-
-
-// =============================
-// CREATE COLLECTOR
-// =============================
-router.post("/add", async (req, res) => {
   try {
     const { name, phone, password, area } = req.body;
 
     if (!name || !phone || !password || !area) {
       return res.status(400).json({
         success: false,
-        message: "All fields required"
+        message: "All fields are required"
       });
     }
 
-    const exists = await Collector.findOne({ phone });
+    const exists = await Collector.findOne({ phone: phone.trim() });
     if (exists) {
       return res.status(400).json({
         success: false,
@@ -71,10 +31,10 @@ router.post("/add", async (req, res) => {
     }
 
     const collector = new Collector({
-      name,
+      name: name.trim(),
       phone: phone.trim(),
-      password: password.trim(),
-      area
+      password: password.trim(), // 🔐 bcrypt pre-save hook will hash
+      area: area.trim()
     });
 
     await collector.save();
@@ -84,34 +44,32 @@ router.post("/add", async (req, res) => {
       message: "Collector created successfully"
     });
 
-  } catch (err) {
+  } catch (error) {
     res.status(500).json({
       success: false,
       message: "Collector creation failed",
-      error: err.message
+      error: error.message
     });
   }
 });
 
 
-// =============================
-// COLLECTOR LOGIN
-// =============================
+/* ===============================
+   COLLECTOR LOGIN  (ADMIN-STYLE)
+   =============================== */
 router.post("/login", async (req, res) => {
   try {
-    let { phone, password } = req.body;
+    const { phone, password } = req.body;
 
     if (!phone || !password) {
       return res.status(400).json({
         success: false,
-        message: "Phone & password required"
+        message: "Phone and password required"
       });
     }
 
-    phone = phone.trim();
-    password = password.trim();
+    const collector = await Collector.findOne({ phone: phone.trim() });
 
-    const collector = await Collector.findOne({ phone });
     if (!collector) {
       return res.status(404).json({
         success: false,
@@ -119,7 +77,7 @@ router.post("/login", async (req, res) => {
       });
     }
 
-    const isMatch = await collector.comparePassword(password);
+    const isMatch = await collector.comparePassword(password.trim());
     if (!isMatch) {
       return res.status(400).json({
         success: false,
@@ -145,78 +103,17 @@ router.post("/login", async (req, res) => {
       }
     });
 
-  } catch (err) {
-    console.error("Collector login error:", err);
-    res.status(500).json({
-      success: false,
-      message: "Collector login failed"
-    });
-  }
-});
-
-
-router.post("/login-v2", async (req, res) => {
-  try {
-    let { phone, password } = req.body;
-
-    // 🧼 CLEAN INPUT
-    if (!phone || !password) {
-      return res.status(400).json({
-        success: false,
-        message: "Phone aur password required hai"
-      });
-    }
-
-    phone = String(phone).trim();
-    password = String(password).trim();
-
-    // 🔍 FIND COLLECTOR
-    const collector = await Collector.findOne({ phone });
-
-    if (!collector) {
-      return res.status(404).json({
-        success: false,
-        message: "Collector not found"
-      });
-    }
-
-    // 🔑 PASSWORD CHECK
-    const isMatch = await collector.comparePassword(password);
-    if (!isMatch) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid password"
-      });
-    }
-
-    // 🎟 TOKEN
-    const token = jwt.sign(
-      { id: collector._id, role: "collector" },
-      "secret123",
-      { expiresIn: "7d" }
-    );
-
-    return res.json({
-      success: true,
-      message: "Collector login successful",
-      token,
-      collector: {
-        id: collector._id,
-        name: collector.name,
-        phone: collector.phone,
-        area: collector.area
-      }
-    });
-
   } catch (error) {
-    console.error("Collector Login Error:", error.message);
     res.status(500).json({
       success: false,
-      message: "Server error in collector login",
+      message: "Collector login failed",
       error: error.message
     });
   }
 });
+
+
+
 
 
 
