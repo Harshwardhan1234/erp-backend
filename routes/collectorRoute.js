@@ -97,4 +97,24 @@ router.get("/dashboard", auth, async (req, res) => {
   });
 });
 
+// GET ASSIGNED CUSTOMERS FOR COLLECTOR
+router.get("/customers", auth, async (req, res) => {
+  try {
+    const customers = await Customer.find({
+      assignedTo: req.collector._id
+    });
+
+    res.json({
+      success: true,
+      customers
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch assigned customers"
+    });
+  }
+});
+
+
 export default router;
