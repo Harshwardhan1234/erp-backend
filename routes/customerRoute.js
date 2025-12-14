@@ -94,18 +94,24 @@ router.delete("/delete/:id", async (req, res) => {
    (SINGLE SOURCE OF TRUTH)
    =============================== */
 // ASSIGN CUSTOMER TO COLLECTOR (FINAL)
+// ASSIGN CUSTOMER TO COLLECTOR (FINAL)
 router.put("/assign/:customerId", async (req, res) => {
   try {
     const { customerId } = req.params;
     const { collectorId } = req.body;
 
     if (!collectorId) {
-      return res.status(400).json({ message: "collectorId missing" });
+      return res.status(400).json({ message: "collectorId required" });
     }
 
     const customer = await Customer.findById(customerId);
     if (!customer) {
       return res.status(404).json({ message: "Customer not found" });
+    }
+
+    const collector = await Collector.findById(collectorId);
+    if (!collector) {
+      return res.status(404).json({ message: "Collector not found" });
     }
 
     customer.assignedTo = collectorId;
@@ -115,9 +121,8 @@ router.put("/assign/:customerId", async (req, res) => {
       success: true,
       message: "Assigned successfully",
     });
-  } catch (err) {
-    console.log("ASSIGN ERROR:", err.message);
-    res.status(500).json({ message: "Assign failed" });
+  } catch (error) {
+    res.status(500).json({ message: "Assignment failed" });
   }
 });
 
