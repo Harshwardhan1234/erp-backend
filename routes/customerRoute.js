@@ -93,15 +93,38 @@ router.delete("/delete/:id", async (req, res) => {
    ASSIGN CUSTOMER TO COLLECTOR
    (SINGLE SOURCE OF TRUTH)
    =============================== */
-router.post("/assign/:customerId/:collectorId", async (req, res) => {
+// ASSIGN CUSTOMER TO COLLECTOR (FINAL)
+router.put("/assign/:customerId", async (req, res) => {
   try {
-    const { customerId, collectorId } = req.params;
+    const { customerId } = req.params;
+    const { collectorId } = req.body;
 
-    const customer = await Customer.findByIdAndUpdate(
-      customerId,
-      { assignedTo: collectorId },
-      { new: true }
-    );
+    if (!collectorId) {
+      return res.status(400).json({
+        success: false,
+        message: "Collector ID required",
+      });
+    }
+
+    const customer = await Customer.findById(customerId);
+    if (!customer) {
+      return res.status(404).json({
+        success: false,
+        message: "Customer not found",
+      });
+    }
+
+    const collector = await Collector.findById(collectorId);
+    if (!collector) {
+      return res.status(404).json({
+        success: false,
+        message: "Collector not found",
+      });
+    }
+
+    // 🔥 SINGLE FIELD (IMPORTANT)
+    customer.assignedTo = collectorId;
+    await customer.save();
 
     res.json({
       success: true,
@@ -112,9 +135,11 @@ router.post("/assign/:customerId/:collectorId", async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Assignment failed",
+      error: error.message,
     });
   }
 });
+
 
 /* ===============================
    COLLECT PAYMENT (COLLECTOR)

@@ -127,10 +127,9 @@ router.get("/dashboard", auth, async (req, res) => {
    =============================== */
 router.get("/customers", auth, async (req, res) => {
   try {
-    // 🔥 SAME FIELD HERE AS WELL
     const customers = await Customer.find({
       assignedTo: req.collector._id,
-    }).sort({ createdAt: -1 });
+    });
 
     res.json({
       success: true,
@@ -143,5 +142,6 @@ router.get("/customers", auth, async (req, res) => {
     });
   }
 });
+
 
 export default router;
