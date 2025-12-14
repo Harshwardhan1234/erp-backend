@@ -100,43 +100,24 @@ router.put("/assign/:customerId", async (req, res) => {
     const { collectorId } = req.body;
 
     if (!collectorId) {
-      return res.status(400).json({
-        success: false,
-        message: "Collector ID required",
-      });
+      return res.status(400).json({ message: "collectorId missing" });
     }
 
     const customer = await Customer.findById(customerId);
     if (!customer) {
-      return res.status(404).json({
-        success: false,
-        message: "Customer not found",
-      });
+      return res.status(404).json({ message: "Customer not found" });
     }
 
-    const collector = await Collector.findById(collectorId);
-    if (!collector) {
-      return res.status(404).json({
-        success: false,
-        message: "Collector not found",
-      });
-    }
-
-    // 🔥 SINGLE FIELD (IMPORTANT)
     customer.assignedTo = collectorId;
     await customer.save();
 
     res.json({
       success: true,
-      message: "Customer assigned successfully",
-      customer,
+      message: "Assigned successfully",
     });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: "Assignment failed",
-      error: error.message,
-    });
+  } catch (err) {
+    console.log("ASSIGN ERROR:", err.message);
+    res.status(500).json({ message: "Assign failed" });
   }
 });
 
