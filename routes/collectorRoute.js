@@ -14,19 +14,23 @@ router.post("/create", async (req, res) => {
     const { name, phone, password, area } = req.body;
 
     if (!name || !phone || !password || !area) {
-      return res.status(400).json({ success: false, message: "All fields required" });
+      return res
+        .status(400)
+        .json({ success: false, message: "All fields required" });
     }
 
     const exists = await Collector.findOne({ phone: phone.trim() });
     if (exists) {
-      return res.status(400).json({ success: false, message: "Collector already exists" });
+      return res
+        .status(400)
+        .json({ success: false, message: "Collector already exists" });
     }
 
     const collector = new Collector({
       name: name.trim(),
       phone: phone.trim(),
       password: password.trim(),
-      area: area.trim()
+      area: area.trim(),
     });
 
     await collector.save();
@@ -46,12 +50,16 @@ router.post("/login", async (req, res) => {
 
     const collector = await Collector.findOne({ phone: phone.trim() });
     if (!collector) {
-      return res.status(404).json({ success: false, message: "Collector not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "Collector not found" });
     }
 
     const isMatch = await collector.comparePassword(password.trim());
     if (!isMatch) {
-      return res.status(400).json({ success: false, message: "Invalid password" });
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid password" });
     }
 
     const token = jwt.sign(
@@ -67,8 +75,8 @@ router.post("/login", async (req, res) => {
         id: collector._id,
         name: collector.name,
         phone: collector.phone,
-        area: collector.area
-      }
+        area: collector.area,
+      },
     });
   } catch (err) {
     res.status(500).json({ success: false, message: "Login failed" });
@@ -76,45 +84,53 @@ router.post("/login", async (req, res) => {
 });
 
 /* ===============================
-   COLLECTOR DASHBOARD
+   COLLECTOR DASHBOARD (FIXED)
    =============================== */
 router.get("/dashboard", auth, async (req, res) => {
-  const customers = await Customer.find({
-    assignedCollector: req.collector._id
-  });
-
-  const pendingAmount = customers.reduce(
-    (sum, c) => sum + (c.remainingAmount || 0),
-    0
-  );
-
-  res.json({
-    success: true,
-    stats: {
-      totalAssigned: customers.length,
-      pendingAmount
-    }
-  });
-});
-
-// GET ASSIGNED CUSTOMERS FOR COLLECTOR
-router.get("/customers", auth, async (req, res) => {
   try {
     const customers = await Customer.find({
-      assignedTo: req.collector._id
+      assignedTo: req.collector._id, // ✅ FIXED FIELD
     });
+
+    const pendingAmount = customers.reduce(
+      (sum, c) => sum + (c.remainingAmount || 0),
+      0
+    );
 
     res.json({
       success: true,
-      customers
+      stats: {
+        totalAssigned: customers.length,
+        pendingAmount,
+      },
     });
-  } catch (error) {
+  } catch (err) {
     res.status(500).json({
       success: false,
-      message: "Failed to fetch assigned customers"
+      message: "Dashboard data fetch failed",
     });
   }
 });
 
+/* ===============================
+   GET ASSIGNED CUSTOMERS
+   =============================== */
+router.get("/customers", auth, async (req, res) => {
+  try {
+    const customers = await Customer.find({
+      assignedTo: req.collector._id, // ✅ SAME FIELD
+    });
+
+    res.json({
+      success: true,
+      customers,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch assigned customers",
+    });
+  }
+});
 
 export default router;
