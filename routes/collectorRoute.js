@@ -35,9 +35,15 @@ router.post("/create", async (req, res) => {
 
     await collector.save();
 
-    res.json({ success: true, message: "Collector created successfully" });
+    res.json({
+      success: true,
+      message: "Collector created successfully",
+    });
   } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+    res.status(500).json({
+      success: false,
+      message: err.message,
+    });
   }
 });
 
@@ -79,7 +85,10 @@ router.post("/login", async (req, res) => {
       },
     });
   } catch (err) {
-    res.status(500).json({ success: false, message: "Login failed" });
+    res.status(500).json({
+      success: false,
+      message: "Login failed",
+    });
   }
 });
 
@@ -88,8 +97,9 @@ router.post("/login", async (req, res) => {
    =============================== */
 router.get("/dashboard", auth, async (req, res) => {
   try {
+    // 🔥 ONLY assignedTo — single source of truth
     const customers = await Customer.find({
-      assignedTo: req.collector._id, // ✅ FIXED FIELD
+      assignedTo: req.collector._id,
     });
 
     const pendingAmount = customers.reduce(
@@ -104,22 +114,23 @@ router.get("/dashboard", auth, async (req, res) => {
         pendingAmount,
       },
     });
-  } catch (err) {
+  } catch (error) {
     res.status(500).json({
       success: false,
-      message: "Dashboard data fetch failed",
+      message: "Failed to load dashboard data",
     });
   }
 });
 
 /* ===============================
-   GET ASSIGNED CUSTOMERS
+   GET ASSIGNED CUSTOMERS (MY CASES)
    =============================== */
 router.get("/customers", auth, async (req, res) => {
   try {
+    // 🔥 SAME FIELD HERE AS WELL
     const customers = await Customer.find({
-      assignedTo: req.collector._id, // ✅ SAME FIELD
-    });
+      assignedTo: req.collector._id,
+    }).sort({ createdAt: -1 });
 
     res.json({
       success: true,
