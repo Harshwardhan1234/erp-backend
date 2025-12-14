@@ -1,8 +1,8 @@
 import express from "express";
 import Collector from "../models/Collector.js";
+import Customer from "../models/Customer.js";
 import jwt from "jsonwebtoken";
 import auth from "../middleware/authMiddleware.js";
-import Customer from "../models/Customer.js";
 
 const router = express.Router();
 
@@ -14,73 +14,44 @@ router.post("/create", async (req, res) => {
     const { name, phone, password, area } = req.body;
 
     if (!name || !phone || !password || !area) {
-      return res.status(400).json({
-        success: false,
-        message: "All fields are required",
-      });
+      return res.status(400).json({ success: false, message: "All fields required" });
     }
 
     const exists = await Collector.findOne({ phone: phone.trim() });
     if (exists) {
-      return res.status(400).json({
-        success: false,
-        message: "Collector already exists",
-      });
+      return res.status(400).json({ success: false, message: "Collector already exists" });
     }
 
     const collector = new Collector({
       name: name.trim(),
       phone: phone.trim(),
       password: password.trim(),
-      area: area.trim(),
+      area: area.trim()
     });
 
     await collector.save();
 
-    res.json({
-      success: true,
-      message: "Collector created successfully",
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: "Collector creation failed",
-      error: error.message,
-    });
+    res.json({ success: true, message: "Collector created successfully" });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
   }
 });
 
 /* ===============================
-   COLLECTOR LOGIN (FINAL & CLEAN)
+   COLLECTOR LOGIN
    =============================== */
 router.post("/login", async (req, res) => {
   try {
-    let { phone, password } = req.body;
+    const { phone, password } = req.body;
 
-    if (!phone || !password) {
-      return res.status(400).json({
-        success: false,
-        message: "Phone and password required",
-      });
-    }
-
-    phone = phone.trim();
-    password = password.trim();
-
-    const collector = await Collector.findOne({ phone });
+    const collector = await Collector.findOne({ phone: phone.trim() });
     if (!collector) {
-      return res.status(404).json({
-        success: false,
-        message: "Collector not found",
-      });
+      return res.status(404).json({ success: false, message: "Collector not found" });
     }
 
-    const isMatch = await collector.comparePassword(password);
+    const isMatch = await collector.comparePassword(password.trim());
     if (!isMatch) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid password",
-      });
+      return res.status(400).json({ success: false, message: "Invalid password" });
     }
 
     const token = jwt.sign(
@@ -91,76 +62,39 @@ router.post("/login", async (req, res) => {
 
     res.json({
       success: true,
-      message: "Collector login successful",
       token,
       collector: {
         id: collector._id,
         name: collector.name,
         phone: collector.phone,
-        area: collector.area,
-      },
+        area: collector.area
+      }
     });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: "Collector login failed",
-      error: error.message,
-    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: "Login failed" });
   }
 });
 
 /* ===============================
-   ASSIGN CUSTOMER
+   COLLECTOR DASHBOARD
    =============================== */
-router.post("/assign", async (req, res) => {
-  try {
-    const { collectorId, customerId } = req.body;
+router.get("/dashboard", auth, async (req, res) => {
+  const customers = await Customer.find({
+    assignedCollector: req.collector._id
+  });
 
-    const collector = await Collector.findById(collectorId);
-    if (!collector) {
-      return res.status(404).json({ success: false, message: "Collector not found" });
+  const pendingAmount = customers.reduce(
+    (sum, c) => sum + (c.remainingAmount || 0),
+    0
+  );
+
+  res.json({
+    success: true,
+    stats: {
+      totalAssigned: customers.length,
+      pendingAmount
     }
-
-    const customer = await Customer.findById(customerId);
-    if (!customer) {
-      return res.status(404).json({ success: false, message: "Customer not found" });
-    }
-
-    if (!collector.assignedCustomers.includes(customerId)) {
-      collector.assignedCustomers.push(customerId);
-      await collector.save();
-    }
-
-    res.json({ success: true, message: "Customer assigned successfully" });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: "Assignment failed",
-      error: error.message,
-    });
-  }
-});
-
-/* ===============================
-   GET ASSIGNED CUSTOMERS
-   =============================== */
-router.get("/customers", auth, async (req, res) => {
-  try {
-    const collector = await Collector.findById(req.collector._id).populate(
-      "assignedCustomers"
-    );
-
-    res.json({
-      success: true,
-      data: collector.assignedCustomers,
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: "Failed to load customers",
-      error: error.message,
-    });
-  }
+  });
 });
 
 export default router;

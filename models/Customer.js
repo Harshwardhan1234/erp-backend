@@ -1,42 +1,48 @@
 import mongoose from "mongoose";
 
 const customerSchema = new mongoose.Schema({
-  name: { type: String, required: true },
-  phone: { type: String, required: true },
-  area: { type: String, required: true },
+  name: String,
+  phone: String,
+  address: String,
+  area: String,
 
-  loanAmount: { type: Number, required: true },
+  loanType: { type: String, default: "Personal Loan" },
 
+  loanAmount: Number,
   amountPaid: { type: Number, default: 0 },
+  remainingAmount: Number,
 
-  remainingAmount: {
-    type: Number,
-    default: function () {
-      return this.loanAmount - this.amountPaid;
-    }
-  },
-
-  dueDate: { type: Date, required: true },
+  dueDate: Date,
+  dpd: { type: Number, default: 0 },
 
   status: {
     type: String,
     enum: ["pending", "paid", "overdue"],
-    default: "pending",
+    default: "pending"
   },
 
-  assignedTo: {
+  assignedCollector: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Collector",
-    default: null,
+    default: null
   },
 
   paymentHistory: [
     {
-      paidAmount: Number,
+      amount: Number,
+      mode: String,
+      reference: String,
       date: { type: Date, default: Date.now }
     }
-  ]
-});
+  ],
 
-const Customer = mongoose.model("Customer", customerSchema);
-export default Customer;
+  visitStatus: {
+    type: String,
+    enum: ["not_visited", "visited", "not_found", "shifted"],
+    default: "not_visited"
+  },
+
+  notes: String
+}, { timestamps: true });
+
+export default mongoose.model("Customer", customerSchema);
